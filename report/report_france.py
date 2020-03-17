@@ -1,4 +1,8 @@
-"""COVID-19 report for france."""
+"""COVID-19 report for france.
+
+COVID-19 data for France :
+https://www.data.gouv.fr/en/datasets/cas-confirmes-dinfection-au-covid-19-par-region/
+"""
 import numpy as np
 import pandas as pd
 
@@ -7,7 +11,10 @@ from matplotlib.gridspec import GridSpec
 import seaborn as sns
 
 import pygal
+from pygal.style import BlueStyle, Style
 
+sns.set_style("whitegrid")
+plt.rc('font', family="serif")
 
 ###############################################################################
 # load the needed data
@@ -28,39 +35,46 @@ df = df.loc[:, ['Date'] + u_reg]
 df['Date'] = pd.to_datetime(list(df['Date'])).strftime('%d/%m')
 df_reg = df.melt('Date', var_name='Département', value_name='vals')
 depart = np.unique(df_reg['Département'])
+n_depart = len(depart)
+palette = sns.color_palette("tab20")
+
+
+###############################################################################
+# Plotting time-series
+###############################################################################
+
+fig = plt.figure()
+gs = fig.add_gridspec(1, 2)
+ax1 = plt.subplot(gs[0, 0])
+g = sns.factorplot(x="Date", y="vals", hue='Département', data=df_reg,
+                   palette=palette, ax=ax1)
+# ax1.set_yscale('log', basey=10)
+plt.close(fig=2)
+
+
+###############################################################################
+# Plotting France map
+###############################################################################
+
 # get latest covid and build the dict of data
 late_covid = df.iloc[-1, :]
 covid_data = {}
 for reg, dep in df_num_gp.items():
     for _dep in dep:
         covid_data[_dep] = late_covid.loc[reg]
-
-
-n_depart = len(depart)
-# palette = sns.color_palette("hls", n_depart)
-palette = sns.color_palette("tab20")
-
-
-
-
-# ax.set_yscale('log', basey=10)
-
-fr_chart = pygal.maps.fr.Departments()
-fr_chart.title = f"COVID-19 {list(df['Date'])[-1]}"
+# render the map
+custom_style = Style(colors=('red', 'orange'), background='transparent',
+                     plot_background='transparent')
+fr_chart = pygal.maps.fr.Departments(style=custom_style)
 fr_chart.add('COVID-19', covid_data)
 fr_chart.render_to_png('img.png')
-
-
-fig = plt.figure()
-gs = fig.add_gridspec(2, 4)
-ax1 = plt.subplot(gs[:, 0:2])
-g = sns.factorplot(x="Date", y="vals", hue='Département', data=df_reg,
-                   palette=palette, ax=ax1)
-plt.close(fig=2)
+# plot the map
 img = plt.imread('img.png')
-ax = plt.subplot(gs[0, 2])
+ax = plt.subplot(gs[0, 1])
 ax.imshow(img)
-
-# print(img)
+plt.tick_params(axis='both', which='both', bottom=False, left=False,
+                top=False, labelbottom=False, labelleft=False)
+ax.axis('off')
+plt.title(f"COVID-19 {list(df['Date'])[-1]}")
 
 plt.show()
