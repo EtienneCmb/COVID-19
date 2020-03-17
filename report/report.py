@@ -18,7 +18,7 @@ plt.rc('font', family="serif")
 plt_continents = [
     'Asia', 'Europe', 'Oceania', 'Africa', 'North America', 'South America'
     ]
-day_freq = 5
+day_freq = 2
 ###############################################################################
 
 
@@ -53,11 +53,11 @@ arr_cont[arr_cont == 0] = np.nan
 
 print(arr_cont[:, 0])
 
-# dif = np.gradient(arr_cont, np.arange(n_dates), axis=0)
-# plt.plot(dif[:, 0])
-arr = np.polyval(np.polyfit(date_range, arr_cont[:, 0], 1), date_range)
-print(arr.shape)
-plt.plot(arr)
+dif = np.gradient(arr_cont, np.arange(n_dates), axis=0)
+plt.plot(dif[:, 0])
+# arr = np.polyval(np.polyfit(date_range, arr_cont[:, 0], 1), date_range)
+# print(arr.shape)
+# plt.plot(arr)
 plt.show()
 exit()
 

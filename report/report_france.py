@@ -31,8 +31,13 @@ df_num_gp = {k: list(df_table['NUMÉRO'][i]) for k, i in df_gp.items()}
 # load the latest covid-19 in france
 df = pd.read_csv('../csse_covid_19_data/covid_france/covid19.csv')
 df = df.loc[:, ['Date'] + u_reg]
-# date conversion and formating
+# date conversion and add ranking
 df['Date'] = pd.to_datetime(list(df['Date'])).strftime('%d/%m')
+late_covid = df.iloc[-1, :]
+late_covid_rank = df.iloc[-1, 1::].sort_values(ascending=False).argsort()
+cols_r = {k: f"{k} ({n_k + 1})" for n_k, k in enumerate(late_covid_rank.index)}
+df.rename(columns=cols_r, inplace=True)
+# plotting conversion
 df_reg = df.melt('Date', var_name='Département', value_name='vals')
 depart = np.unique(df_reg['Département'])
 n_depart = len(depart)
@@ -50,6 +55,8 @@ g = sns.factorplot(x="Date", y="vals", hue='Département', data=df_reg,
                    palette=palette, ax=ax1)
 # ax1.set_yscale('log', basey=10)
 plt.close(fig=2)
+plt.ylabel('Nombre de cas confirmés', fontsize=15), plt.xlabel('')
+plt.title('Evolution du COVID-19 en France, par région', fontsize=17)
 
 
 ###############################################################################
@@ -57,7 +64,6 @@ plt.close(fig=2)
 ###############################################################################
 
 # get latest covid and build the dict of data
-late_covid = df.iloc[-1, :]
 covid_data = {}
 for reg, dep in df_num_gp.items():
     for _dep in dep:
