@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 import seaborn as sns
 
 import pygal
@@ -37,25 +38,28 @@ for reg, dep in df_num_gp.items():
 
 n_depart = len(depart)
 # palette = sns.color_palette("hls", n_depart)
-palette = sns.color_palette("Set3")
+palette = sns.color_palette("tab20")
 
 
 
-fig = plt.figure()
-ax1 = fig.add_subplot(121)
-ax2 = fig.add_subplot(122)
-g = sns.factorplot(x="Date", y="vals", hue='Département', data=df_reg,
-                   palette=palette, ax=ax1)
-ax = plt.gca()
+
 # ax.set_yscale('log', basey=10)
 
-plt.sca(ax2)
 fr_chart = pygal.maps.fr.Departments()
 fr_chart.title = f"COVID-19 {list(df['Date'])[-1]}"
 fr_chart.add('COVID-19', covid_data)
 fr_chart.render_to_png('img.png')
+
+
+fig = plt.figure()
+gs = fig.add_gridspec(2, 4)
+ax1 = plt.subplot(gs[:, 0:2])
+g = sns.factorplot(x="Date", y="vals", hue='Département', data=df_reg,
+                   palette=palette, ax=ax1)
+plt.close(fig=2)
 img = plt.imread('img.png')
-plt.imshow(img)
+ax = plt.subplot(gs[0, 2])
+ax.imshow(img)
 
 # print(img)
 
