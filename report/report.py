@@ -51,15 +51,18 @@ gp_cont = df_dates.groupby(level=0).sum().loc[plt_continents, :]
 arr_cont = np.array(gp_cont).T.astype(float)
 arr_cont[arr_cont == 0] = np.nan
 
-print(arr_cont[:, 0])
+# print(arr_cont[:, 0])
 
-dif = np.gradient(arr_cont, np.arange(n_dates), axis=0)
-plt.plot(dif[:, 0])
-# arr = np.polyval(np.polyfit(date_range, arr_cont[:, 0], 1), date_range)
-# print(arr.shape)
-# plt.plot(arr)
-plt.show()
-exit()
+# grow = arr_cont[1:, :] / arr_cont[0:-1, :]
+
+# # dif = np.gradient(arr_cont, np.arange(n_dates), axis=0)
+# # plt.plot(dif[:, 0])
+# # arr = np.polyval(np.polyfit(date_range, arr_cont[:, 0], 1), date_range)
+# # print(arr.shape)
+# # plt.plot(savgol_filter(grow, 5, 3, axis=0))
+# plt.plot(grow)
+# plt.show()
+# exit()
 
 
 gp_cont_cum = pd.DataFrame(arr_cont, index=dates,
