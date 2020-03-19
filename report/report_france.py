@@ -52,7 +52,10 @@ n_depart = len(depart)
 xlabs = list(df_reg['Date'])
 palette = sns.color_palette("tab20")
 
-arr = np.array(df.iloc[:, 1:])
+# arr = np.array(df.iloc[:, 1:])
+# plt.plot(arr.sum(1))
+# plt.show()
+# exit()
 # print(arr.shape)
 # grow = arr[1::, :] / arr[0:-1, :]
 # grow[~np.isfinite(grow)] = 1
@@ -76,7 +79,7 @@ arr = np.array(df.iloc[:, 1:])
 # Plotting time-series
 ###############################################################################
 
-fig = plt.figure(figsize=(18, 10))
+fig = plt.figure(figsize=(18, 9))
 gs = fig.add_gridspec(1, 2, left=0.05, bottom=0.05, right=0.99, top=0.90,
                   wspace=.01)
 ax1 = plt.subplot(gs[0, 0])
@@ -114,7 +117,7 @@ for reg, dep in df_num_gp.items():
 custom_style = Style(colors=('red', 'orange'), background='transparent',
                      plot_background='transparent')
 fr_chart = pygal.maps.fr.Departments(style=custom_style)
-fr_chart.add('COVID-19', covid_data)
+fr_chart.add('Nombre de cas', covid_data)
 fr_chart.render_to_png('img.png')
 # plot the map
 img = plt.imread('img.png')
@@ -123,6 +126,5 @@ ax.imshow(img)
 plt.tick_params(axis='both', which='both', bottom=False, left=False,
                 top=False, labelbottom=False, labelleft=False)
 ax.axis('off')
-plt.title(f"COVID-19 {list(df['Date'])[-1]}")
 
 plt.show()
