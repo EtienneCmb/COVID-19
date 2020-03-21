@@ -19,10 +19,21 @@ plt.rc('font', family="serif")
 
 
 ###############################################################################
+order = ['Ile-de-France', 'Grand Est']
+groups = {'Outremer': ['La Réunion', 'Guyane', 'Guadeloupe', 'Mayotte',
+                       'Saint-Barthélémy', 'Saint-Martin', 'Martinique'],
+          'Provence-Alpes-Côte d’Azur': ['Corse']}
 vlines = {'15/03': 'Elections', '16/03': 'Confinement'}
 vlines_kw = dict(color='k', lw=1.)
 ###############################################################################
 
+
+###############################################################################
+# build groups
+###############################################################################
+repl = {}
+for to_r, r in groups.items():
+    for _r in r: repl[_r] = to_r  # noqa
 
 ###############################################################################
 # load the needed data
@@ -30,6 +41,7 @@ vlines_kw = dict(color='k', lw=1.)
 # load the table containg departement number
 df_table = pd.read_csv('../csse_covid_19_data/covid_france/depart_fr.csv')
 df_table = df_table[['NUMÉRO', 'REGION']]
+df_table.replace(repl, inplace=True, regex=True)
 u_reg = np.unique(df_table['REGION']).tolist()
 # convert depart num
 depart_num = [str(k) if len(k) > 1 else f"0{k}" for k in df_table['NUMÉRO']]
@@ -38,6 +50,8 @@ df_gp = df_table.groupby('REGION').groups
 df_num_gp = {k: list(df_table['NUMÉRO'][i]) for k, i in df_gp.items()}
 # load the latest covid-19 in france
 df = pd.read_csv('../csse_covid_19_data/covid_france/covid19.csv')
+df.rename(columns=repl, inplace=True)
+df = df.groupby(axis='columns', level=0).sum()
 df = df.loc[:, ['Date'] + u_reg]
 # date conversion and add ranking
 df['Date'] = pd.to_datetime(list(df['Date'])).strftime('%d/%m')
@@ -45,24 +59,23 @@ late_covid = df.iloc[-1, :]
 late_covid_rank = df.iloc[-1, 1::].sort_values(ascending=False).argsort()
 cols_r = {k: f"{k} ({n_k + 1})" for n_k, k in enumerate(late_covid_rank.index)}
 df.rename(columns=cols_r, inplace=True)
+
 # plotting conversion
 df_reg = df.melt('Date', var_name='Régions', value_name='vals')
 depart = np.unique(df_reg['Régions'])
 n_depart = len(depart)
 xlabs = list(df_reg['Date'])
-palette = sns.color_palette("tab20")
+palette = sns.color_palette("tab20", n_colors=n_depart)
+
 
 # arr = np.array(df.iloc[:, 1:])
-# plt.plot(arr.sum(1))
-# plt.show()
-# exit()
-# print(arr.shape)
+# arr[arr == 0] = 1
 # grow = arr[1::, :] / arr[0:-1, :]
-# grow[~np.isfinite(grow)] = 1
+# # grow[~np.isfinite(grow)] = 1
 
-# grow = np.diff(arr, axis=0)
+# # grow = np.diff(arr, axis=0)
 # x = np.arange(0, grow.shape[0])
-# x_new = np.linspace(0, grow.shape[0] - 1, num=20)
+# x_new = np.linspace(0, grow.shape[0] - 1, num=100)
 # print(x, x_new)
 # f = interpolate.interp1d(x, grow, axis=0, kind='quadratic')
 # grow = f(x_new)
@@ -85,12 +98,15 @@ gs = fig.add_gridspec(1, 2, left=0.05, bottom=0.05, right=0.99, top=0.90,
 ax1 = plt.subplot(gs[0, 0])
 g = sns.factorplot(x="Date", y="vals", hue='Régions', data=df_reg,
                    palette=palette, ax=ax1)
-# ax1.set_yscale('log', basey=10)
 plt.close(fig=2)
+# ax1.set_yscale('log', basey=2)
+# plt.ylim(1)
 ax = plt.gca()
 plt.ylabel('Nombre de cas confirmés', fontsize=15), plt.xlabel('')
 plt.title('Evolution du COVID-19 en France, par région', fontsize=17,
           fontweight='bold')
+# plt.show()
+# exit()
 
 # -----------------------------------------------------------------------------
 # build vertical lines
@@ -112,6 +128,8 @@ for d, t in vlines.items():
 covid_data = {}
 for reg, dep in df_num_gp.items():
     for _dep in dep:
+        if reg == 'Outremer':
+            continue
         covid_data[_dep] = late_covid.loc[reg]
 # render the map
 custom_style = Style(colors=('red', 'orange'), background='transparent',

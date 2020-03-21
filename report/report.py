@@ -15,16 +15,27 @@ plt.rc('font', family="serif")
 
 
 ###############################################################################
+# plotted elements
+case = 'Confirmed'  # {'Confirmed', 'Deaths', 'Recovered'}
+to_plt = 'worst'  # {'world', 'eu', 'na', 'asia', 'melt', 'top', 'worst'}
+# plotted continents / countries
 plt_continents = [
-    'Asia', 'Europe', 'Oceania', 'Africa', 'North America', 'South America'
-    ]
-day_freq = 2
+    'Europe', 'Asia', 'North America', 'South America', 'Africa', 'Oceania']
+plt_eu = [
+    'France', 'Italy', 'Spain', 'United Kingdom', 'Germany', 'Belgium',
+    'Netherlands', 'Greece', 'Norway', 'Denmark', 'Sweden', 'Switzerland']
+plt_na = ['US', 'Canada', 'Mexico']
+plt_asia = ['China', 'India', 'Russia', 'Korea, South', 'Thailand', 'Turkey']
+plt_melt = [
+    'China', 'Korea, South', 'Italy', 'Spain', 'Germany', 'US', 'France',
+    'United Kingdom', 'Canada', 'Australia']
+# plotting settings
+log_scale = True
+day_freq = 2  # x-label day frequency
+n_top = 10  # number of top / worst
 ###############################################################################
 
 
-###############################################################################
-# load the needed data
-###############################################################################
 # Load the continents
 with open("continents.json") as f:
     continents = json.load(f)
@@ -35,51 +46,65 @@ for cont, couns in continents.items():
         repl[coun] = cont
 
 # load the covid time-series
-df = pd.read_csv("../csse_covid_19_data/csse_covid_19_time_series/time_series_19-covid-Confirmed.csv")
-# split into countries / dates
-df_names = df.iloc[:, :2]
-df_names['Continents'] = df['Country/Region'].replace(repl, regex=True)
-df_dates = df.iloc[:, 4::]
-df_dates.index = df_names['Continents']
-# convert columns into proper date times
-dates = pd.to_datetime(df_dates.columns).strftime('%d/%m')
-n_dates = len(dates)
-date_range = np.arange(n_dates)
-df_dates.columns = dates
+file = f'time_series_19-covid-{case}.csv'
+df = pd.read_csv(f"../csse_covid_19_data/csse_covid_19_time_series/{file}")
+df.rename(columns={'Country/Region': 'Country'}, inplace=True)
+# remove lat / long columns
+df.drop(labels=['Lat', 'Long', 'Province/State'], axis=1, inplace=True)
+# dates conversion
+dates = pd.to_datetime(df.iloc[:, 1::].columns).strftime('%d/%m')
+dates_repl = {k: i for k, i in zip(df.columns[1::], dates)}
+df.rename(columns=dates_repl, inplace=True)
+# insert continent column
+cont = list(df['Country'].replace(repl, regex=True))
+df.insert(loc=0, column='Continents', value=cont)
 
-gp_cont = df_dates.groupby(level=0).sum().loc[plt_continents, :]
-arr_cont = np.array(gp_cont).T.astype(float)
-arr_cont[arr_cont == 0] = np.nan
+# build the subdf
+if to_plt == 'world':
+    sub_df = df.groupby('Continents').sum().loc[plt_continents].reset_index()
+    id_var = 'Continents'
+elif to_plt == 'eu':
+    _df = df.set_index('Continents').loc['Europe']
+    sub_df = _df.groupby('Country').sum().loc[plt_eu].reset_index()
+    id_var = 'Country'
+elif to_plt == 'na':
+    _df = df.set_index('Continents').loc['North America']
+    sub_df = _df.groupby('Country').sum().loc[plt_na].reset_index()
+    id_var = 'Country'
+elif to_plt == 'asia':
+    _df = df.set_index('Continents').loc['Asia']
+    sub_df = _df.groupby('Country').sum().loc[plt_asia].reset_index()
+    id_var = 'Country'
+elif to_plt == 'melt':
+    _df = df.set_index('Country').loc[plt_melt]
+    sub_df = _df.groupby('Country').sum().loc[plt_melt].reset_index()
+    id_var = 'Country'
+elif to_plt in ['top', 'worst']:
+    _df = df.groupby('Country').sum().reset_index()
+    _df.index = _df.iloc[:, -1] - _df.iloc[:, -2]
+    if to_plt == 'worst':
+        sub_df = _df.sort_index(ascending=False).iloc[0:n_top, :]
+        sub_df = sub_df.reset_index(drop=True)
+    id_var = 'Country'
 
-# print(arr_cont[:, 0])
-
-# grow = arr_cont[1:, :] / arr_cont[0:-1, :]
-
-# # dif = np.gradient(arr_cont, np.arange(n_dates), axis=0)
-# # plt.plot(dif[:, 0])
-# # arr = np.polyval(np.polyfit(date_range, arr_cont[:, 0], 1), date_range)
-# # print(arr.shape)
-# # plt.plot(savgol_filter(grow, 5, 3, axis=0))
-# plt.plot(grow)
-# plt.show()
-# exit()
-
-
-gp_cont_cum = pd.DataFrame(arr_cont, index=dates,
-                           columns=gp_cont.index).reset_index()
-gp_cont_cum = gp_cont_cum.melt('index', var_name='Continents',
-                               value_name='vals')
-
-g = sns.factorplot(x="index", y="vals", hue='Continents', data=gp_cont_cum)
+# build the mlet dataframe, dates and color palette
+sub_df = sub_df.melt(id_vars=id_var, var_name='Date', value_name='Count')
+date_range = np.arange(len(dates))
+palette = sns.color_palette("tab20", n_colors=len(sub_df))
+# plot results
+fig = plt.figure(figsize=(11, 9))
 ax = plt.gca()
-ax.set_yscale('log', basey=10)
+sns.factorplot(x="Date", y="Count", hue=id_var, data=sub_df, palette=palette,
+               ax=ax)
+plt.close(fig=2)
+ax = plt.gca()
 ax.set_xticks(date_range[::-1][::day_freq][::-1])
 ax.set_xticklabels(dates[::-1][::day_freq][::-1], rotation=-45)
-plt.ylim(.5)
-plt.ylabel("# confirmed cases", fontsize=13), plt.xlabel('')
+plt.xlabel(''), plt.ylabel(f'# {case.lower()}')
 plt.title('Monitoring COVID-19 since 22 Jan 2020', fontsize=15,
           fontweight='bold')
+if log_scale:
+    ax.set_yscale('log', basey=10)
+    plt.ylim(1)
 
 plt.show()
-
-# print(df.groupby('Country/Region').sum())
