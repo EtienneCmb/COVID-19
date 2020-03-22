@@ -6,7 +6,7 @@ from scipy.signal import savgol_filter
 import json
 
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
+from matplotlib.ticker import ScalarFormatter
 import seaborn as sns
 
 # plt.style.use('seaborn-paper')
@@ -17,7 +17,7 @@ plt.rc('font', family="serif")
 ###############################################################################
 # plotted elements
 case = 'Confirmed'  # {'Confirmed', 'Deaths', 'Recovered'}
-to_plt = 'worst'  # {'world', 'eu', 'na', 'asia', 'melt', 'top', 'worst'}
+to_plt = 'worst'  # {'world', 'eu', 'na', 'asia', 'melt', 'worst'}
 # plotted continents / countries
 plt_continents = [
     'Europe', 'Asia', 'North America', 'South America', 'Africa', 'Oceania']
@@ -59,6 +59,7 @@ df.rename(columns=dates_repl, inplace=True)
 cont = list(df['Country'].replace(repl, regex=True))
 df.insert(loc=0, column='Continents', value=cont)
 
+
 # build the subdf
 if to_plt == 'world':
     sub_df = df.groupby('Continents').sum().loc[plt_continents].reset_index()
@@ -87,6 +88,7 @@ elif to_plt in ['top', 'worst']:
         sub_df = sub_df.reset_index(drop=True)
     id_var = 'Country'
 
+
 # build the mlet dataframe, dates and color palette
 sub_df = sub_df.melt(id_vars=id_var, var_name='Date', value_name='Count')
 date_range = np.arange(len(dates))
@@ -99,12 +101,13 @@ sns.factorplot(x="Date", y="Count", hue=id_var, data=sub_df, palette=palette,
 plt.close(fig=2)
 ax = plt.gca()
 ax.set_xticks(date_range[::-1][::day_freq][::-1])
-ax.set_xticklabels(dates[::-1][::day_freq][::-1], rotation=-45)
-plt.xlabel(''), plt.ylabel(f'# {case.lower()}')
+ax.set_xticklabels(dates[::-1][::day_freq][::-1], rotation=45, ha='right')
+plt.xlabel(''), plt.ylabel(f'# {case.lower()}', fontsize=13)
 plt.title('Monitoring COVID-19 since 22 Jan 2020', fontsize=15,
           fontweight='bold')
 if log_scale:
     ax.set_yscale('log', basey=10)
-    plt.ylim(1)
+    plt.ylim(.9)
+    ax.yaxis.set_major_formatter(ScalarFormatter())
 
 plt.show()
